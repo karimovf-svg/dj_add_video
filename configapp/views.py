@@ -43,18 +43,19 @@ def loginPage(request):
 
 def add_news(request):
     if request.method == 'POST':
-        form = NewsForm(request.POST, files=request.FILES)
+        form = NewsForm(request.POST, request.FILES)
         if form.is_valid():
-            file = request.FILES["video"]
-            thread = threading.Thread(target=set_up_cloud, args=(file, form))
-            thread.start()
+            news = form.save(commit=False)
+            news.video = request.FILES.get('video')
+            news.save()
             messages.success(request, "Created News")
             return redirect('home')
         else:
-            messages.success(request, form.errors)
+            messages.error(request, form.errors)
     else:
         form = NewsForm()
     return render(request, 'add_news.html', {'form': form})
+
 
 def delete_news(request, news_id):
     news = get_object_or_404(News, id=news_id)
@@ -62,7 +63,4 @@ def delete_news(request, news_id):
     messages.success(request, "Deleted News")
     return redirect('home')
 
-def set_up_cloud(file, instance):
-    file_path = default_storage.save(file.name, ContentFile(file.read()))
-    instance.video = file_path
-    instance.save()
+
